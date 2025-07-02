@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+        }
+        
+        .game-container {
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+            padding: 10px;
+        }
+        
+        canvas {
+            width: 100%;
+            height: auto;
+            border: 2px solid #fff;
+            background-color: #000;
+            max-width: 400px;
+        }
+        
+        .score {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .game-over {
+            color: #ff4444;
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        
+        .instructions {
+            color: #ccc;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .difficulty-selection {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        .difficulty-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .difficulty-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #fff;
+            background-color: transparent;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .difficulty-btn:hover {
+            background-color: #fff;
+            color: #1a1a1a;
+        }
+        
+        .difficulty-btn.easy {
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+        
+        .difficulty-btn.easy:hover {
+            background-color: #4caf50;
+            color: #fff;
+        }
+        
+        .difficulty-btn.medium {
+            border-color: #ff9800;
+            color: #ff9800;
+        }
+        
+        .difficulty-btn.medium:hover {
+            background-color: #ff9800;
+            color: #fff;
+        }
+        
+        .difficulty-btn.hard {
+            border-color: #f44336;
+            color: #f44336;
+        }
+        
+        .difficulty-btn.hard:hover {
+            background-color: #f44336;
+            color: #fff;
+        }
+        
+        .game-info {
+            color: #ccc;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .game-controls {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            background: none;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background-color: #555;
+            border-color: #777;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                min-height: 100vh;
+            }
+            
+            .game-container {
+                max-width: 100%;
+                padding: 5px;
+            }
+            
+            .score {
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+            
+            .difficulty-buttons {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .difficulty-btn {
+                width: 200px;
+                padding: 15px 20px;
+                font-size: 18px;
+            }
+            
+            .game-controls {
+                gap: 10px;
+                margin: 8px 0;
+            }
+            
+            .control-btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .instructions {
+                font-size: 12px;
+                margin-top: 15px;
+            }
+            
+            .game-over {
+                font-size: 24px;
+                margin-top: 15px;
+            }
+        }
+        
+        /* Virtual D-pad for mobile */
+        .mobile-controls {
+            display: none;
+            margin-top: 20px;
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+        }
+        
+        .dpad-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #333;
+            border: 2px solid #666;
+            color: #fff;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .dpad-btn:active {
+            background-color: #555;
+            transform: scale(0.95);
+        }
+        
+        .dpad-up {
+            top: 0;
+            left: 50px;
+        }
+        
+        .dpad-down {
+            bottom: 0;
+            left: 50px;
+        }
+        
+        .dpad-left {
+            left: 0;
+            top: 50px;
+        }
+        
+        .dpad-right {
+            right: 0;
+            top: 50px;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: block;
+            }
+            
+            .instructions {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="difficultyScreen" class="difficulty-selection">
+            <h1 style="color: #fff; margin-bottom: 30px;">🐍 Snake Game</h1>
+            <h2 style="color: #fff; margin-bottom: 20px;">Choose Difficulty</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn easy" onclick="startGame('easy')">Easy</button>
+                <button class="difficulty-btn medium" onclick="startGame('medium')">Medium</button>
+                <button class="difficulty-btn hard" onclick="startGame('hard')">Hard</button>
+            </div>
+            <div class="game-info">
+                <strong>Easy:</strong> Slow speed, more time to think<br>
+                <strong>Medium:</strong> Normal speed, classic gameplay<br>
+                <strong>Hard:</strong> Fast speed, quick reflexes needed
+            </div>
+        </div>
+        
+        <div id="gameScreen" style="display: none;">
+            <div class="score">Score: <span id="score">0</span> | Difficulty: <span id="difficulty">Easy</span></div>
+            <div class="game-controls">
+                <button class="control-btn" onclick="togglePause()" title="Press P or Spacebar to pause/resume">⏯️ Pause</button>
+                <button class="control-btn" onclick="toggleSound()" id="soundToggle" title="Press M to toggle sound">🔊</button>
+            </div>
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <div id="gameOver" class="game-over" style="display: none;">
+                Game Over!<br>
+                <span style="font-size: 16px;">Press Space to restart | Press Escape for menu</span>
+            </div>
+            <div class="instructions">
+                Press any arrow key to start<br>
+                Use arrow keys to move the snake<br>
+                Eat the blinking frog to grow and score points 🐸<br>
+                <strong>Controls:</strong> P or Spacebar = Pause/Resume | M = Toggle Sound
+            </div>
+            
+            <!-- Virtual D-pad for mobile -->
+            <div class="mobile-controls">
+                <div class="dpad-btn dpad-up">↑</div>
+                <div class="dpad-btn dpad-down">↓</div>
+                <div class="dpad-btn dpad-left">←</div>
+                <div class="dpad-btn dpad-right">→</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="snake.js"></script>
+</body>
+</html>
