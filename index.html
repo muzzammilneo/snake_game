@@ -36,6 +36,18 @@
             margin-bottom: 10px;
         }
         
+        .score #score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .difficulty-indicator {
+            font-size: 14px;
+            color: #888;
+            font-weight: normal;
+        }
+        
         .game-over {
             color: #ff4444;
             font-size: 32px;
@@ -108,10 +120,20 @@
             color: #fff;
         }
         
-        .game-info {
-            color: #ccc;
+        .developer-credit {
+            color: #888;
             font-size: 14px;
-            margin-top: 10px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .developer-credit p {
+            margin: 0;
+        }
+        
+        .developer-credit strong {
+            color: #4CAF50;
+            font-weight: bold;
         }
         
         .how-to-play-section {
@@ -195,6 +217,50 @@
             color: #fff;
             display: block;
             margin-bottom: 8px;
+        }
+        
+        .difficulty-tips {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .difficulty-tip {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid;
+        }
+        
+        .easy-tip {
+            border-left-color: #4CAF50;
+        }
+        
+        .medium-tip {
+            border-left-color: #FF9800;
+        }
+        
+        .hard-tip {
+            border-left-color: #F44336;
+        }
+        
+        .difficulty-tip strong {
+            color: #fff;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .difficulty-tip ul {
+            margin: 8px 0 0 0;
+            padding-left: 18px;
+        }
+        
+        .difficulty-tip li {
+            color: #ddd;
+            margin-bottom: 4px;
+            font-size: 13px;
         }
         
         .quick-instructions {
@@ -385,12 +451,6 @@
                 <button class="difficulty-btn medium" onclick="startGame('medium')">Medium</button>
                 <button class="difficulty-btn hard" onclick="startGame('hard')">Hard</button>
             </div>
-            <div class="game-info">
-                <strong>Easy:</strong> Slow speed, more time to think<br>
-                <strong>Medium:</strong> Normal speed, classic gameplay<br>
-                <strong>Hard:</strong> Fast speed, quick reflexes needed
-            </div>
-            
             <div class="how-to-play-section">
                 <button class="how-to-play-btn" onclick="toggleHowToPlay()">📖 How to Play</button>
                 
@@ -399,7 +459,7 @@
                     
                     <div class="instruction-section">
                         <h4>🎯 Objective</h4>
-                        <p>Control the snake to eat the blinking frog 🐸 and grow as long as possible without hitting walls or yourself!</p>
+                        <p>Control the snake to eat the apple 🍎 and grow as long as possible without hitting walls or yourself!</p>
                     </div>
                     
                     <div class="instruction-section">
@@ -429,7 +489,7 @@
                         <h4>🎮 Gameplay</h4>
                         <ul>
                             <li>Press any arrow key or swipe to start</li>
-                            <li>Eat the frog to grow and increase score</li>
+                            <li>Eat the apple to grow and increase score</li>
                             <li>Avoid hitting walls or your own tail</li>
                             <li>Game speed increases with difficulty</li>
                             <li>You can unpause by pressing direction keys</li>
@@ -439,10 +499,43 @@
                     <div class="instruction-section">
                         <h4>🏆 Scoring</h4>
                         <ul>
-                            <li>Easy: 10 points per frog</li>
-                            <li>Medium: 20 points per frog</li>
-                            <li>Hard: 30 points per frog</li>
+                            <li>Easy: 10 points per apple</li>
+                            <li>Medium: 20 points per apple</li>
+                            <li>Hard: 30 points per apple</li>
                         </ul>
+                    </div>
+                    
+                    <div class="instruction-section">
+                        <h4>⚡ Difficulty Levels</h4>
+                        <div class="difficulty-tips">
+                            <div class="difficulty-tip easy-tip">
+                                <strong>🟢 Easy (Slow Speed)</strong>
+                                <ul>
+                                    <li>Perfect for beginners and learning</li>
+                                    <li>Plenty of time to plan your moves</li>
+                                    <li>Great for practicing basic strategies</li>
+                                    <li>Recommended for first-time players</li>
+                                </ul>
+                            </div>
+                            <div class="difficulty-tip medium-tip">
+                                <strong>🟡 Medium (Normal Speed)</strong>
+                                <ul>
+                                    <li>Classic Snake game experience</li>
+                                    <li>Balanced challenge and reaction time</li>
+                                    <li>Good for players with some experience</li>
+                                    <li>Best overall difficulty for most players</li>
+                                </ul>
+                            </div>
+                            <div class="difficulty-tip hard-tip">
+                                <strong>🔴 Hard (Fast Speed)</strong>
+                                <ul>
+                                    <li>High-speed challenge for experts</li>
+                                    <li>Requires quick reflexes and planning</li>
+                                    <li>Highest point rewards</li>
+                                    <li>Test your Snake mastery!</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="instruction-section">
@@ -450,16 +543,20 @@
                         <ul>
                             <li>Plan your moves ahead of time</li>
                             <li>Use the pause feature to think (P or Spacebar)</li>
-                            <li>The frog blinks - it's still the same target!</li>
+                            <li>The apple is always there waiting for you!</li>
                             <li>Try different difficulty levels for varied challenges</li>
                         </ul>
                     </div>
                 </div>
             </div>
+            
+            <div class="developer-credit">
+                <p>Developed by <strong>Muzzammil</strong></p>
+            </div>
         </div>
         
         <div id="gameScreen" style="display: none;">
-            <div class="score">Score: <span id="score">0</span> | Difficulty: <span id="difficulty">Easy</span></div>
+            <div class="score">Score: <span id="score">0</span> | <span class="difficulty-indicator" id="difficulty">Easy</span></div>
             <div class="game-controls">
                 <button class="control-btn" id="restartToggle" title="Press R to restart game">🔄 Restart</button>
                 <button class="control-btn" id="pauseToggle" title="Press P or Spacebar to pause/resume">⏯️ Pause</button>
@@ -471,7 +568,7 @@
                 <span style="font-size: 16px;">Press Space to restart | Press Escape for menu</span>
             </div>
             <div class="quick-instructions">
-                Press any arrow key or swipe to start • Eat the frog 🐸 to grow and score!
+                Press any arrow key or swipe to start • Eat the apple 🍎 to grow and score!
             </div>
             
             <!-- Virtual D-pad for mobile -->

@@ -24,7 +24,7 @@ let tileCount = 20; // Will be set when canvas is initialized
 
 // Difficulty settings
 const difficulties = {
-    easy: { speed: 200, scoreMultiplier: 1, name: 'Easy' },
+    easy: { speed: 150, scoreMultiplier: 1, name: 'Easy' },
     medium: { speed: 100, scoreMultiplier: 2, name: 'Medium' },
     hard: { speed: 60, scoreMultiplier: 3, name: 'Hard' }
 };
@@ -34,8 +34,16 @@ let gameSpeed = difficulties.medium.speed;
 
 // Game state
 let snake = [
-    {x: 10, y: 10}
+    {x: 10, y: 10},
+    {x: 9, y: 10},
+    {x: 8, y: 10}
 ];
+// Smooth movement state
+let snakeRenderPositions = [];
+let moveProgress = 0;
+let lastMoveTime = 0;
+let targetPositions = [];
+
 let food = {};
 let dx = 0;
 let dy = 0;
@@ -46,6 +54,8 @@ let gamePaused = false;
 let directionChanged = false; // Prevent multiple direction changes per frame
 let animationFrame = 0; // For frog blinking animation
 let gameLoopTimeoutId = null; // Track game loop timeout
+let renderLoopId = null; // Track render loop
+let lastUpdateTime = 0; // Track last game logic update
 let eventListenersAdded = false; // Track if event listeners are already added
 
 // Sound effects
@@ -148,7 +158,7 @@ function togglePause() {
     
     gamePaused = !gamePaused;
     if (!gamePaused) {
-        gameLoop();
+        lastUpdateTime = Date.now(); // Reset timing when resuming
     }
 }
 
@@ -179,7 +189,15 @@ function init() {
         initSounds();
     }
     
-    snake = [{ x: 10, y: 10 }];
+    snake = [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 }
+    ];
+    
+    // Initialize smooth movement positions
+    initializeSmoothPositions();
+    
     dx = 0;
     dy = 0;
     score = 0;
@@ -187,10 +205,14 @@ function init() {
     gameStarted = false;
     gamePaused = false;
     directionChanged = false; // Reset direction change flag
+    moveProgress = 0;
+    lastMoveTime = Date.now();
     scoreElement.textContent = score;
     gameOverElement.style.display = 'none';
     generateFood();
-    gameLoop();
+    lastUpdateTime = Date.now();
+    renderLoop();
+    gameLogicLoop();
 }
 
 // Generate random food position
@@ -209,73 +231,163 @@ function generateFood() {
     }
 }
 
-// Draw frog with blinking animation
-function drawFrog(x, y) {
+// Draw apple food item
+function drawApple(x, y) {
     const centerX = x * gridSize + gridSize / 2;
     const centerY = y * gridSize + gridSize / 2;
     const size = gridSize - 4;
+    const radius = size * 0.4;
     
-    // Frog body (green ellipse)
-    ctx.fillStyle = '#4CAF50';
+    // Apple body (red circle)
+    ctx.fillStyle = '#FF3B30';
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY + 2, size * 0.4, size * 0.35, 0, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY + 1, radius, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Frog head (darker green circle)
-    ctx.fillStyle = '#388E3C';
+    // Apple highlight (lighter red)
+    ctx.fillStyle = '#FF6B60';
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY - 2, size * 0.35, size * 0.3, 0, 0, 2 * Math.PI);
+    ctx.arc(centerX - radius * 0.3, centerY - radius * 0.2, radius * 0.4, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Eyes (white circles with black pupils)
-    const eyeRadius = size * 0.08;
-    const eyeOffset = size * 0.15;
+    // Apple stem (brown)
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(centerX - 1, centerY - radius - 2, 2, 6);
     
-    // Left eye
-    ctx.fillStyle = 'white';
+    // Apple leaf (green)
+    ctx.fillStyle = '#34C759';
     ctx.beginPath();
-    ctx.arc(centerX - eyeOffset, centerY - size * 0.15, eyeRadius, 0, 2 * Math.PI);
+    ctx.ellipse(centerX + 3, centerY - radius + 1, 3, 5, Math.PI / 6, 0, 2 * Math.PI);
     ctx.fill();
-    
-    // Right eye
-    ctx.beginPath();
-    ctx.arc(centerX + eyeOffset, centerY - size * 0.15, eyeRadius, 0, 2 * Math.PI);
-    ctx.fill();
-    
-    // Blinking animation - hide pupils during blink
-    const blinkCycle = 60; // Blink every 60 frames
-    const isBlinking = (animationFrame % blinkCycle) < 3; // Blink for 3 frames
-    
-    if (!isBlinking) {
-        // Left pupil
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(centerX - eyeOffset, centerY - size * 0.15, eyeRadius * 0.6, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Right pupil
-        ctx.beginPath();
-        ctx.arc(centerX + eyeOffset, centerY - size * 0.15, eyeRadius * 0.6, 0, 2 * Math.PI);
-        ctx.fill();
+}
+
+// Initialize smooth movement positions
+function initializeSmoothPositions() {
+    snakeRenderPositions = [];
+    targetPositions = [];
+    for (let i = 0; i < snake.length; i++) {
+        snakeRenderPositions.push({ x: snake[i].x, y: snake[i].y });
+        targetPositions.push({ x: snake[i].x, y: snake[i].y });
     }
+}
+
+// Update smooth movement positions
+function updateSmoothPositions() {
+    const now = Date.now();
+    const timeSinceLastMove = now - lastMoveTime;
+    moveProgress = Math.min(1, timeSinceLastMove / gameSpeed);
     
-    // Mouth (small arc)
-    ctx.strokeStyle = '#2E7D32';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY + size * 0.05, size * 0.1, 0, Math.PI);
-    ctx.stroke();
+    // Interpolate between current and target positions
+    for (let i = 0; i < snakeRenderPositions.length; i++) {
+        if (i < targetPositions.length) {
+            snakeRenderPositions[i].x = snakeRenderPositions[i].x + (targetPositions[i].x - snakeRenderPositions[i].x) * moveProgress;
+            snakeRenderPositions[i].y = snakeRenderPositions[i].y + (targetPositions[i].y - snakeRenderPositions[i].y) * moveProgress;
+        }
+    }
+}
+
+// Draw natural snake with smooth interpolation
+function drawInterpolatedSnake() {
+    if (snakeRenderPositions.length === 0) return;
+
+    // Update smooth positions before drawing
+    updateSmoothPositions();
+
+    // Draw snake body as connected segments with tapering
+    for (let i = 0; i < snakeRenderPositions.length; i++) {
+        const segment = snakeRenderPositions[i];
+        const centerX = segment.x * gridSize + gridSize / 2;
+        const centerY = segment.y * gridSize + gridSize / 2;
+
+        // Calculate size based on position (tapering effect)
+        const maxRadius = (gridSize - 2) / 2;
+        const minRadius = maxRadius * 0.3; // Tail will be 30% of head size
+        const sizeRatio = (snakeRenderPositions.length - i) / snakeRenderPositions.length;
+        const radius = minRadius + (maxRadius - minRadius) * sizeRatio;
+
+        // Set solid blue color for high quality appearance
+        ctx.fillStyle = '#4285F4';  // Consistent Google blue for all segments
+
+        // Draw circular segment
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw connection to next segment for smooth appearance
+        if (i < snakeRenderPositions.length - 1) {
+            const nextSegment = snakeRenderPositions[i + 1];
+            const nextCenterX = nextSegment.x * gridSize + gridSize / 2;
+            const nextCenterY = nextSegment.y * gridSize + gridSize / 2;
+
+            // Calculate next radius for smooth connection
+            const nextSizeRatio = (snakeRenderPositions.length - (i + 1)) / snakeRenderPositions.length;
+            const nextRadius = minRadius + (maxRadius - minRadius) * nextSizeRatio;
+
+            // Draw connecting segment
+            const angle = Math.atan2(nextCenterY - centerY, nextCenterX - centerX);
+            const perpAngle = angle + Math.PI / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX + Math.cos(perpAngle) * radius, centerY + Math.sin(perpAngle) * radius);
+            ctx.lineTo(centerX - Math.cos(perpAngle) * radius, centerY - Math.sin(perpAngle) * radius);
+            ctx.lineTo(nextCenterX - Math.cos(perpAngle) * nextRadius, nextCenterY - Math.sin(perpAngle) * nextRadius);
+            ctx.lineTo(nextCenterX + Math.cos(perpAngle) * nextRadius, nextCenterY + Math.sin(perpAngle) * nextRadius);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Add highlight to head
+        if (i === 0) {
+            ctx.strokeStyle = '#1A73E8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 1, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Eyes
+            const eyeSize = Math.max(2, radius * 0.2);
+            const eyeOffset = radius * 0.4;
+
+            ctx.fillStyle = 'white';
+            // Left eye
+            ctx.beginPath();
+            ctx.arc(centerX - eyeOffset, centerY - eyeOffset, eyeSize, 0, 2 * Math.PI);
+            ctx.fill();
+            // Right eye
+            ctx.beginPath();
+            ctx.arc(centerX + eyeOffset, centerY - eyeOffset, eyeSize, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Eye pupils
+            ctx.fillStyle = 'black';
+            const pupilSize = eyeSize * 0.6;
+            ctx.beginPath();
+            ctx.arc(centerX - eyeOffset, centerY - eyeOffset, pupilSize, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX + eyeOffset, centerY - eyeOffset, pupilSize, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+}
+
+// Draw chess board background
+function drawChessBoard() {
+    // Define two alternating greenish colors like Google Snake
+    const lightTile = '#AAD751';  // Light green
+    const darkTile = '#A2D149';   // Slightly darker green
     
-    // Front legs (small green ovals)
-    ctx.fillStyle = '#4CAF50';
-    // Left leg
-    ctx.beginPath();
-    ctx.ellipse(centerX - size * 0.25, centerY + size * 0.2, size * 0.08, size * 0.12, 0, 0, 2 * Math.PI);
-    ctx.fill();
-    // Right leg
-    ctx.beginPath();
-    ctx.ellipse(centerX + size * 0.25, centerY + size * 0.2, size * 0.08, size * 0.12, 0, 0, 2 * Math.PI);
-    ctx.fill();
+    // Draw chess board pattern
+    for (let x = 0; x < tileCount; x++) {
+        for (let y = 0; y < tileCount; y++) {
+            // Determine tile color based on position (alternating pattern)
+            const isLightTile = (x + y) % 2 === 0;
+            ctx.fillStyle = isLightTile ? lightTile : darkTile;
+            
+            // Draw square tile
+            ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+        }
+    }
 }
 
 // Draw game elements
@@ -283,36 +395,32 @@ function draw() {
     // Increment animation frame for frog blinking
     animationFrame++;
     
-    // Clear canvas
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Draw chess board background
+    drawChessBoard();
     
-    // Draw snake
-    ctx.fillStyle = 'lime';
-    for (let segment of snake) {
-        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-    }
+    // Draw snake with natural appearance
+drawInterpolatedSnake();
     
-    // Draw frog (food)
-    drawFrog(food.x, food.y);
+    // Draw apple (food)
+    drawApple(food.x, food.y);
 }
 
 // Update game state
 function update() {
     if (!gameRunning || !gameStarted) return;
-    
+
     // Only move if there's a direction set
     if (dx === 0 && dy === 0) return;
-    
+
     // Move snake head
     const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-    
+
     // Check wall collisions
     if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
         gameOver();
         return;
     }
-    
+
     // Check self collision
     for (let segment of snake) {
         if (head.x === segment.x && head.y === segment.y) {
@@ -320,9 +428,9 @@ function update() {
             return;
         }
     }
-    
+
     snake.unshift(head);
-    
+
     // Check food collision
     if (head.x === food.x && head.y === food.y) {
         score += 10 * difficulties[currentDifficulty].scoreMultiplier;
@@ -332,9 +440,14 @@ function update() {
     } else {
         snake.pop();
     }
-    
+
+    // Update target positions for smooth movement
+    updateTargetPositions();
+
     // Reset direction change flag after snake has moved
     directionChanged = false;
+    lastMoveTime = Date.now();
+    moveProgress = 0;
 }
 
 // Game over
@@ -349,11 +462,8 @@ function gameOver() {
     gameOverElement.style.display = 'block';
 }
 
-// Game loop
-function gameLoop() {
-    if (!gamePaused) {
-        update();
-    }
+// High-framerate render loop (60 FPS)
+function renderLoop() {
     draw();
     
     // Show pause indicator
@@ -369,13 +479,55 @@ function gameLoop() {
         ctx.fillText('Press P or Spacebar to resume', canvas.width / 2, canvas.height / 2 + 40);
     }
     
-    if (gameRunning && !gamePaused) {
-        gameLoopTimeoutId = setTimeout(gameLoop, gameSpeed);
-    } else if (gamePaused) {
-        // Keep drawing when paused but don't schedule next update
-        gameLoopTimeoutId = setTimeout(() => {
-            if (gamePaused) gameLoop();
-        }, 100);
+    if (gameRunning) {
+        renderLoopId = requestAnimationFrame(renderLoop);
+    }
+}
+
+// Update target positions for smooth interpolation
+function updateTargetPositions() {
+    // Handle snake growth (when snake length increases)
+    while (targetPositions.length < snake.length) {
+        // Instead of pushing {x: 0, y: 0}, use the last segment's position
+        const lastPos = targetPositions[targetPositions.length - 1] || snake[snake.length - 1];
+        targetPositions.push({ x: lastPos.x, y: lastPos.y });
+    }
+    
+    // Handle snake shrinking (shouldn't happen in normal gameplay)
+    while (targetPositions.length > snake.length) {
+        targetPositions.pop();
+    }
+    
+    // Handle render positions array
+    while (snakeRenderPositions.length < snake.length) {
+        // Use the last render position or the corresponding snake segment
+        const lastPos = snakeRenderPositions[snakeRenderPositions.length - 1] || snake[snake.length - 1];
+        snakeRenderPositions.push({ x: lastPos.x, y: lastPos.y });
+    }
+    
+    while (snakeRenderPositions.length > snake.length) {
+        snakeRenderPositions.pop();
+    }
+    
+    // Update target positions to match logical snake positions
+    for (let i = 0; i < snake.length; i++) {
+        targetPositions[i].x = snake[i].x;
+        targetPositions[i].y = snake[i].y;
+    }
+}
+
+// Game logic update loop (runs at game speed)
+function gameLogicLoop() {
+    if (!gamePaused && gameRunning) {
+        const currentTime = Date.now();
+        if (currentTime - lastUpdateTime >= gameSpeed) {
+            update();
+            lastUpdateTime = currentTime;
+        }
+    }
+    
+    if (gameRunning) {
+        gameLoopTimeoutId = setTimeout(gameLogicLoop, 16); // Check every ~16ms for smooth timing
     }
 }
 
@@ -406,7 +558,7 @@ function moveTouch(e) {
             // Unpause if game is paused
             if (gamePaused) {
                 gamePaused = false;
-                gameLoop();
+                lastUpdateTime = Date.now();
             }
             dx = -1;
             dy = 0;
@@ -417,7 +569,7 @@ function moveTouch(e) {
             // Unpause if game is paused
             if (gamePaused) {
                 gamePaused = false;
-                gameLoop();
+                lastUpdateTime = Date.now();
             }
             dx = 1;
             dy = 0;
@@ -430,7 +582,7 @@ function moveTouch(e) {
             // Unpause if game is paused
             if (gamePaused) {
                 gamePaused = false;
-                gameLoop();
+                lastUpdateTime = Date.now();
             }
             dx = 0;
             dy = -1;
@@ -441,7 +593,7 @@ function moveTouch(e) {
             // Unpause if game is paused
             if (gamePaused) {
                 gamePaused = false;
-                gameLoop();
+                lastUpdateTime = Date.now();
             }
             dx = 0;
             dy = 1;
@@ -474,7 +626,7 @@ document.addEventListener('keydown', (e) => {
                 // Unpause if game is paused
                 if (gamePaused) {
                     gamePaused = false;
-                    gameLoop();
+                    lastUpdateTime = Date.now();
                 }
                 dx = 0;
                 dy = -1;
@@ -487,7 +639,7 @@ document.addEventListener('keydown', (e) => {
                 // Unpause if game is paused
                 if (gamePaused) {
                     gamePaused = false;
-                    gameLoop();
+                    lastUpdateTime = Date.now();
                 }
                 dx = 0;
                 dy = 1;
@@ -500,7 +652,7 @@ document.addEventListener('keydown', (e) => {
                 // Unpause if game is paused
                 if (gamePaused) {
                     gamePaused = false;
-                    gameLoop();
+                    lastUpdateTime = Date.now();
                 }
                 dx = -1;
                 dy = 0;
@@ -513,7 +665,7 @@ document.addEventListener('keydown', (e) => {
                 // Unpause if game is paused
                 if (gamePaused) {
                     gamePaused = false;
-                    gameLoop();
+                    lastUpdateTime = Date.now();
                 }
                 dx = 1;
                 dy = 0;
@@ -591,7 +743,7 @@ function startGame(difficulty) {
                     // Unpause if game is paused
                     if (gamePaused) {
                         gamePaused = false;
-                        gameLoop();
+                        lastUpdateTime = Date.now();
                     }
                     dx = 0;
                     dy = -1;
@@ -608,7 +760,7 @@ function startGame(difficulty) {
                     // Unpause if game is paused
                     if (gamePaused) {
                         gamePaused = false;
-                        gameLoop();
+                        lastUpdateTime = Date.now();
                     }
                     dx = 0;
                     dy = 1;
@@ -625,7 +777,7 @@ function startGame(difficulty) {
                     // Unpause if game is paused
                     if (gamePaused) {
                         gamePaused = false;
-                        gameLoop();
+                        lastUpdateTime = Date.now();
                     }
                     dx = -1;
                     dy = 0;
@@ -642,7 +794,7 @@ function startGame(difficulty) {
                     // Unpause if game is paused
                     if (gamePaused) {
                         gamePaused = false;
-                        gameLoop();
+                        lastUpdateTime = Date.now();
                     }
                     dx = 1;
                     dy = 0;
