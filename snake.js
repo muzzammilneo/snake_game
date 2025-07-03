@@ -158,6 +158,11 @@ function toggleSound() {
     }
 }
 
+// Restart game
+function restartGame() {
+    init();
+}
+
 // Initialize game
 function init() {
     // Initialize sound system if not already initialized
@@ -363,10 +368,14 @@ let initialY = null;
 function startTouch(e) {
     initialX = e.touches[0].clientX;
     initialY = e.touches[0].clientY;
+    e.preventDefault(); // Prevent page scrolling
 }
 
 function moveTouch(e) {
-    if (initialX === null || initialY === null) return;
+    if (initialX === null || initialY === null) {
+        e.preventDefault(); // Prevent page scrolling even if we return early
+        return;
+    }
 
     let currentX = e.touches[0].clientX;
     let currentY = e.touches[0].clientY;
@@ -402,7 +411,7 @@ function moveTouch(e) {
 
     initialX = null;
     initialY = null;
-    e.preventDefault();
+    e.preventDefault(); // Prevent page scrolling
 }
 
 // Handle keyboard input
@@ -452,6 +461,9 @@ document.addEventListener('keydown', (e) => {
         case 'KeyM':
             toggleSound();
             break;
+        case 'KeyR':
+            restartGame();
+            break;
         case 'Space':
             e.preventDefault(); // Prevent page scrolling
             togglePause();
@@ -478,9 +490,26 @@ function startGame(difficulty) {
     difficultyScreen.style.display = 'none';
     gameScreen.style.display = 'block';
     
-    // Add touch event listeners to canvas
-    canvas.addEventListener('touchstart', startTouch, false);
-    canvas.addEventListener('touchmove', moveTouch, false);
+    // Add touch event listeners to canvas with passive: false to allow preventDefault
+    canvas.addEventListener('touchstart', startTouch, { passive: false });
+    canvas.addEventListener('touchmove', moveTouch, { passive: false });
+    
+    // Set up control button event listeners
+    const restartBtn = document.getElementById('restartToggle');
+    const pauseBtn = document.getElementById('pauseToggle');
+    const soundBtn = document.getElementById('soundToggle');
+    
+    if (restartBtn) {
+        restartBtn.addEventListener('click', restartGame);
+    }
+    
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', togglePause);
+    }
+    
+    if (soundBtn) {
+        soundBtn.addEventListener('click', toggleSound);
+    }
     
     // Set up virtual D-pad event listeners
     const dpadUp = document.querySelector('.dpad-up');
