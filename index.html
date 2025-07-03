@@ -114,6 +114,96 @@
             margin-top: 10px;
         }
         
+        .how-to-play-section {
+            margin-top: 30px;
+        }
+        
+        .how-to-play-btn {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+        
+        .how-to-play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+        
+        .how-to-play-content {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: left;
+            backdrop-filter: blur(10px);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .how-to-play-content h3 {
+            color: #fff;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        
+        .instruction-section {
+            margin-bottom: 20px;
+        }
+        
+        .instruction-section h4 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .instruction-section p, .instruction-section li {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+        
+        .instruction-section ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .control-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-item strong {
+            color: #fff;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .quick-instructions {
+            color: #ccc;
+            font-size: 14px;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        
         .game-controls {
             margin: 10px 0;
             display: flex;
@@ -184,6 +274,40 @@
             .game-over {
                 font-size: 24px;
                 margin-top: 15px;
+            }
+            
+            .how-to-play-section {
+                margin-top: 20px;
+            }
+            
+            .how-to-play-btn {
+                padding: 15px 30px;
+                font-size: 18px;
+            }
+            
+            .how-to-play-content {
+                padding: 20px;
+                max-height: 300px;
+                font-size: 14px;
+            }
+            
+            .how-to-play-content h3 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .instruction-section h4 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .control-item {
+                padding: 12px;
             }
         }
         
@@ -266,6 +390,72 @@
                 <strong>Medium:</strong> Normal speed, classic gameplay<br>
                 <strong>Hard:</strong> Fast speed, quick reflexes needed
             </div>
+            
+            <div class="how-to-play-section">
+                <button class="how-to-play-btn" onclick="toggleHowToPlay()">📖 How to Play</button>
+                
+                <div id="howToPlayContent" class="how-to-play-content" style="display: none;">
+                    <h3>🎮 How to Play Snake Game</h3>
+                    
+                    <div class="instruction-section">
+                        <h4>🎯 Objective</h4>
+                        <p>Control the snake to eat the blinking frog 🐸 and grow as long as possible without hitting walls or yourself!</p>
+                    </div>
+                    
+                    <div class="instruction-section">
+                        <h4>🕹️ Controls</h4>
+                        <div class="controls-grid">
+                            <div class="control-item">
+                                <strong>🖥️ Desktop:</strong>
+                                <ul>
+                                    <li>↑ ↓ ← → Arrow keys to move</li>
+                                    <li>P or Spacebar = Pause/Resume</li>
+                                    <li>M = Toggle Sound</li>
+                                    <li>R = Restart Game</li>
+                                </ul>
+                            </div>
+                            <div class="control-item">
+                                <strong>📱 Mobile:</strong>
+                                <ul>
+                                    <li>Swipe in any direction to move</li>
+                                    <li>Use virtual D-pad buttons</li>
+                                    <li>Tap control buttons for pause/sound</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-section">
+                        <h4>🎮 Gameplay</h4>
+                        <ul>
+                            <li>Press any arrow key or swipe to start</li>
+                            <li>Eat the frog to grow and increase score</li>
+                            <li>Avoid hitting walls or your own tail</li>
+                            <li>Game speed increases with difficulty</li>
+                            <li>You can unpause by pressing direction keys</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="instruction-section">
+                        <h4>🏆 Scoring</h4>
+                        <ul>
+                            <li>Easy: 10 points per frog</li>
+                            <li>Medium: 20 points per frog</li>
+                            <li>Hard: 30 points per frog</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="instruction-section">
+                        <h4>💡 Tips</h4>
+                        <ul>
+                            <li>Plan your moves ahead of time</li>
+                            <li>Use the pause feature to think (P or Spacebar)</li>
+                            <li>The frog blinks - it's still the same target!</li>
+                            <li>Try different difficulty levels for varied challenges</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div id="gameScreen" style="display: none;">
@@ -280,11 +470,8 @@
                 Game Over!<br>
                 <span style="font-size: 16px;">Press Space to restart | Press Escape for menu</span>
             </div>
-            <div class="instructions">
-                Press any arrow key to start<br>
-                Use arrow keys to move the snake<br>
-                Eat the blinking frog to grow and score points 🐸<br>
-                <strong>Controls:</strong> P or Spacebar = Pause/Resume | M = Toggle Sound
+            <div class="quick-instructions">
+                Press any arrow key or swipe to start • Eat the frog 🐸 to grow and score!
             </div>
             
             <!-- Virtual D-pad for mobile -->

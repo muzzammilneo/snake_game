@@ -43,7 +43,10 @@ let score = 0;
 let gameRunning = true;
 let gameStarted = false;
 let gamePaused = false;
+let directionChanged = false; // Prevent multiple direction changes per frame
 let animationFrame = 0; // For frog blinking animation
+let gameLoopTimeoutId = null; // Track game loop timeout
+let eventListenersAdded = false; // Track if event listeners are already added
 
 // Sound effects
 let soundEnabled = true;
@@ -165,6 +168,12 @@ function restartGame() {
 
 // Initialize game
 function init() {
+    // Clear any existing game loop
+    if (gameLoopTimeoutId) {
+        clearTimeout(gameLoopTimeoutId);
+        gameLoopTimeoutId = null;
+    }
+    
     // Initialize sound system if not already initialized
     if (!audioContext) {
         initSounds();
@@ -177,6 +186,7 @@ function init() {
     gameRunning = true;
     gameStarted = false;
     gamePaused = false;
+    directionChanged = false; // Reset direction change flag
     scoreElement.textContent = score;
     gameOverElement.style.display = 'none';
     generateFood();
@@ -322,12 +332,20 @@ function update() {
     } else {
         snake.pop();
     }
+    
+    // Reset direction change flag after snake has moved
+    directionChanged = false;
 }
 
 // Game over
 function gameOver() {
     gameRunning = false;
-    sounds.gameOver(); // Play game over sound
+    // Clear the game loop timeout
+    if (gameLoopTimeoutId) {
+        clearTimeout(gameLoopTimeoutId);
+        gameLoopTimeoutId = null;
+    }
+    sounds.gameOver();
     gameOverElement.style.display = 'block';
 }
 
@@ -352,10 +370,10 @@ function gameLoop() {
     }
     
     if (gameRunning && !gamePaused) {
-        setTimeout(gameLoop, gameSpeed);
+        gameLoopTimeoutId = setTimeout(gameLoop, gameSpeed);
     } else if (gamePaused) {
         // Keep drawing when paused but don't schedule next update
-        setTimeout(() => {
+        gameLoopTimeoutId = setTimeout(() => {
             if (gamePaused) gameLoop();
         }, 100);
     }
@@ -384,27 +402,51 @@ function moveTouch(e) {
     let diffY = initialY - currentY;
 
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX > 0 && dx !== 1) {
+        if (diffX > 0 && dx !== 1 && !directionChanged) {
+            // Unpause if game is paused
+            if (gamePaused) {
+                gamePaused = false;
+                gameLoop();
+            }
             dx = -1;
             dy = 0;
             gameStarted = true;
+            directionChanged = true;
             sounds.move();
-        } else if (diffX < 0 && dx !== -1) {
+        } else if (diffX < 0 && dx !== -1 && !directionChanged) {
+            // Unpause if game is paused
+            if (gamePaused) {
+                gamePaused = false;
+                gameLoop();
+            }
             dx = 1;
             dy = 0;
             gameStarted = true;
+            directionChanged = true;
             sounds.move();
         }
     } else {
-        if (diffY > 0 && dy !== 1) {
+        if (diffY > 0 && dy !== 1 && !directionChanged) {
+            // Unpause if game is paused
+            if (gamePaused) {
+                gamePaused = false;
+                gameLoop();
+            }
             dx = 0;
             dy = -1;
             gameStarted = true;
+            directionChanged = true;
             sounds.move();
-        } else if (diffY < 0 && dy !== -1) {
+        } else if (diffY < 0 && dy !== -1 && !directionChanged) {
+            // Unpause if game is paused
+            if (gamePaused) {
+                gamePaused = false;
+                gameLoop();
+            }
             dx = 0;
             dy = 1;
             gameStarted = true;
+            directionChanged = true;
             sounds.move();
         }
     }
@@ -425,34 +467,58 @@ document.addEventListener('keydown', (e) => {
         return;
     }
     
-    // Prevent snake from reversing into itself
+    // Prevent snake from reversing into itself and multiple direction changes per frame
     switch(e.code) {
         case 'ArrowUp':
-            if (dy !== 1) {
+            if (dy !== 1 && !directionChanged) {
+                // Unpause if game is paused
+                if (gamePaused) {
+                    gamePaused = false;
+                    gameLoop();
+                }
                 dx = 0;
                 dy = -1;
                 gameStarted = true;
+                directionChanged = true;
             }
             break;
         case 'ArrowDown':
-            if (dy !== -1) {
+            if (dy !== -1 && !directionChanged) {
+                // Unpause if game is paused
+                if (gamePaused) {
+                    gamePaused = false;
+                    gameLoop();
+                }
                 dx = 0;
                 dy = 1;
                 gameStarted = true;
+                directionChanged = true;
             }
             break;
         case 'ArrowLeft':
-            if (dx !== 1) {
+            if (dx !== 1 && !directionChanged) {
+                // Unpause if game is paused
+                if (gamePaused) {
+                    gamePaused = false;
+                    gameLoop();
+                }
                 dx = -1;
                 dy = 0;
                 gameStarted = true;
+                directionChanged = true;
             }
             break;
         case 'ArrowRight':
-            if (dx !== -1) {
+            if (dx !== -1 && !directionChanged) {
+                // Unpause if game is paused
+                if (gamePaused) {
+                    gamePaused = false;
+                    gameLoop();
+                }
                 dx = 1;
                 dy = 0;
                 gameStarted = true;
+                directionChanged = true;
             }
             break;
         case 'KeyP':
@@ -490,75 +556,104 @@ function startGame(difficulty) {
     difficultyScreen.style.display = 'none';
     gameScreen.style.display = 'block';
     
-    // Add touch event listeners to canvas with passive: false to allow preventDefault
-    canvas.addEventListener('touchstart', startTouch, { passive: false });
-    canvas.addEventListener('touchmove', moveTouch, { passive: false });
-    
-    // Set up control button event listeners
-    const restartBtn = document.getElementById('restartToggle');
-    const pauseBtn = document.getElementById('pauseToggle');
-    const soundBtn = document.getElementById('soundToggle');
-    
-    if (restartBtn) {
-        restartBtn.addEventListener('click', restartGame);
-    }
-    
-    if (pauseBtn) {
-        pauseBtn.addEventListener('click', togglePause);
-    }
-    
-    if (soundBtn) {
-        soundBtn.addEventListener('click', toggleSound);
-    }
-    
-    // Set up virtual D-pad event listeners
-    const dpadUp = document.querySelector('.dpad-up');
-    const dpadDown = document.querySelector('.dpad-down');
-    const dpadLeft = document.querySelector('.dpad-left');
-    const dpadRight = document.querySelector('.dpad-right');
-    
-    if (dpadUp) {
-        dpadUp.addEventListener('click', () => {
-            if (dy !== 1) {
-                dx = 0;
-                dy = -1;
-                gameStarted = true;
-                sounds.move();
-            }
-        });
-    }
-    
-    if (dpadDown) {
-        dpadDown.addEventListener('click', () => {
-            if (dy !== -1) {
-                dx = 0;
-                dy = 1;
-                gameStarted = true;
-                sounds.move();
-            }
-        });
-    }
-    
-    if (dpadLeft) {
-        dpadLeft.addEventListener('click', () => {
-            if (dx !== 1) {
-                dx = -1;
-                dy = 0;
-                gameStarted = true;
-                sounds.move();
-            }
-        });
-    }
-    
-    if (dpadRight) {
-        dpadRight.addEventListener('click', () => {
-            if (dx !== -1) {
-                dx = 1;
-                dy = 0;
-                gameStarted = true;
-                sounds.move();
-            }
-        });
+    // Only add event listeners if they haven't been added yet
+    if (!eventListenersAdded) {
+        // Add touch event listeners to canvas with passive: false to allow preventDefault
+        canvas.addEventListener('touchstart', startTouch, { passive: false });
+        canvas.addEventListener('touchmove', moveTouch, { passive: false });
+        
+        // Set up control button event listeners
+        const restartBtn = document.getElementById('restartToggle');
+        const pauseBtn = document.getElementById('pauseToggle');
+        const soundBtn = document.getElementById('soundToggle');
+        
+        if (restartBtn) {
+            restartBtn.addEventListener('click', restartGame);
+        }
+        
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', togglePause);
+        }
+        
+        if (soundBtn) {
+            soundBtn.addEventListener('click', toggleSound);
+        }
+        
+        // Set up virtual D-pad event listeners
+        const dpadUp = document.querySelector('.dpad-up');
+        const dpadDown = document.querySelector('.dpad-down');
+        const dpadLeft = document.querySelector('.dpad-left');
+        const dpadRight = document.querySelector('.dpad-right');
+        
+        if (dpadUp) {
+            dpadUp.addEventListener('click', () => {
+                if (dy !== 1 && !directionChanged) {
+                    // Unpause if game is paused
+                    if (gamePaused) {
+                        gamePaused = false;
+                        gameLoop();
+                    }
+                    dx = 0;
+                    dy = -1;
+                    gameStarted = true;
+                    directionChanged = true;
+                    sounds.move();
+                }
+            });
+        }
+        
+        if (dpadDown) {
+            dpadDown.addEventListener('click', () => {
+                if (dy !== -1 && !directionChanged) {
+                    // Unpause if game is paused
+                    if (gamePaused) {
+                        gamePaused = false;
+                        gameLoop();
+                    }
+                    dx = 0;
+                    dy = 1;
+                    gameStarted = true;
+                    directionChanged = true;
+                    sounds.move();
+                }
+            });
+        }
+        
+        if (dpadLeft) {
+            dpadLeft.addEventListener('click', () => {
+                if (dx !== 1 && !directionChanged) {
+                    // Unpause if game is paused
+                    if (gamePaused) {
+                        gamePaused = false;
+                        gameLoop();
+                    }
+                    dx = -1;
+                    dy = 0;
+                    gameStarted = true;
+                    directionChanged = true;
+                    sounds.move();
+                }
+            });
+        }
+        
+        if (dpadRight) {
+            dpadRight.addEventListener('click', () => {
+                if (dx !== -1 && !directionChanged) {
+                    // Unpause if game is paused
+                    if (gamePaused) {
+                        gamePaused = false;
+                        gameLoop();
+                    }
+                    dx = 1;
+                    dy = 0;
+                    gameStarted = true;
+                    directionChanged = true;
+                    sounds.move();
+                }
+            });
+        }
+        
+        eventListenersAdded = true;
     }
     
     init();
@@ -568,4 +663,22 @@ function startGame(difficulty) {
 function returnToMenu() {
     gameScreen.style.display = 'none';
     difficultyScreen.style.display = 'block';
+}
+
+// Toggle How to Play content visibility
+function toggleHowToPlay() {
+    const content = document.getElementById('howToPlayContent');
+    const button = document.querySelector('.how-to-play-btn');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        button.textContent = '📖 Hide Instructions';
+        // Smooth scroll to the content
+        setTimeout(() => {
+            content.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    } else {
+        content.style.display = 'none';
+        button.textContent = '📖 How to Play';
+    }
 }
